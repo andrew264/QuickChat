@@ -86,7 +86,6 @@ public class Client extends JFrame implements ActionListener {
         contentPanel.add(writeField, BorderLayout.SOUTH);
 
         // add components to frame
-        setIconImage(new ImageIcon("src/main/resources/images/round_chat_black_48dp.png").getImage());
         setTitle("Chat Client");
         getContentPane().add(contentPanel);
         pack();
@@ -98,29 +97,24 @@ public class Client extends JFrame implements ActionListener {
 
     public static void main(String[] args) {
         InetAddress serverIP = FindServer.getIP();
-        Icon userIcon = new ImageIcon("src/main/resources/images/round_person_add_black_18dp.png");
         String username = (String) JOptionPane.showInputDialog(null, "Enter your username:",
-                "Username", JOptionPane.QUESTION_MESSAGE, userIcon, null, null);
+                "Username", JOptionPane.QUESTION_MESSAGE, null, null, "");
         if (username == null || username.isEmpty()) {
-            Icon errorIcon = new ImageIcon("src/main/resources/images/round_error_black_18dp.png");
             JOptionPane.showMessageDialog(null, "You must enter a username to continue.",
-                    "Error", JOptionPane.ERROR_MESSAGE, errorIcon);
+                    "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(0);
         } else if (username.length() > 20) {
-            Icon errorIcon = new ImageIcon("src/main/resources/images/round_error_black_18dp.png");
             JOptionPane.showMessageDialog(null, "Your username must be less than 20 characters.",
-                    "Error", JOptionPane.ERROR_MESSAGE, errorIcon);
+                    "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(0);
         } else if (username.contains(" ")) {
-            Icon errorIcon = new ImageIcon("src/main/resources/images/round_error_black_18dp.png");
             JOptionPane.showMessageDialog(null, "Your username cannot contain spaces.",
-                    "Error", JOptionPane.ERROR_MESSAGE, errorIcon);
+                    "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(0);
         } else if (username.equalsIgnoreCase("server") || username.equalsIgnoreCase("admin") ||
                 username.equalsIgnoreCase("everyone") || username.equalsIgnoreCase("you")) {
-            Icon errorIcon = new ImageIcon("src/main/resources/images/round_error_black_18dp.png");
             JOptionPane.showMessageDialog(null, "Your username cannot be " + username + ".",
-                    "Error", JOptionPane.ERROR_MESSAGE, errorIcon);
+                    "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(0);
         }
         try {
