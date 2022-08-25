@@ -24,7 +24,7 @@ public class Client extends JFrame implements ActionListener {
     private final LinkedList<Message> messages = new LinkedList<>();
     private final JTextPane readField;
     private final JTextField writeField;
-    private final SimpleAttributeSet timeAttr, usernameAttr, messageAttr;
+    private final SimpleAttributeSet timeAttr, usernameAttr, dmAttr, messageAttr;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
 
@@ -67,6 +67,11 @@ public class Client extends JFrame implements ActionListener {
         StyleConstants.setForeground(usernameAttr, Color.RED);
         StyleConstants.setBold(usernameAttr, true);
 
+        // dm Attributes
+        dmAttr = new SimpleAttributeSet();
+        StyleConstants.setForeground(dmAttr, Color.BLUE);
+        StyleConstants.setBold(dmAttr, true);
+
         // message Attributes
         messageAttr = new SimpleAttributeSet();
         StyleConstants.setForeground(messageAttr, Color.BLACK);
@@ -87,7 +92,7 @@ public class Client extends JFrame implements ActionListener {
         contentPanel.add(writeField, BorderLayout.SOUTH);
 
         // add components to frame
-        setTitle("Chat Client");
+        setTitle("Local Chat [" + username + "]");
         getContentPane().add(contentPanel);
         pack();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -178,7 +183,6 @@ public class Client extends JFrame implements ActionListener {
                 bufferedWriter.write(msgToSend.getJSONString());
                 bufferedWriter.newLine();
                 bufferedWriter.flush();
-                if (msgToSend.isDM()) msgToSend.asFPP(username);
                 messages.add(msgToSend);
                 repaint();
 
@@ -207,7 +211,6 @@ public class Client extends JFrame implements ActionListener {
                     }
                     msgReceived = new Message(receivedJSONString);
                     if (msgReceived.isDM()) {
-                        msgReceived.asFPP(username);
                         System.out.println("[" + msgReceived.getUsername() + " To YOU] @" + msgReceived.getTime() +
                                 " : " + msgReceived.getMessage());
                     } else {
@@ -251,7 +254,6 @@ public class Client extends JFrame implements ActionListener {
                     bufferedWriter.newLine();
                     bufferedWriter.flush();
                 }
-                if (msgToSend.isDM()) msgToSend.asFPP(username);
                 messages.add(msgToSend);
                 repaint();
 
@@ -269,11 +271,29 @@ public class Client extends JFrame implements ActionListener {
         Document doc = readField.getStyledDocument();
 
         synchronized (messages) {
-            for (Message message : messages) {
+            for (Message msg : messages) {
                 try {
-                    doc.insertString(doc.getLength(), message.getTime() + " ", timeAttr);
-                    doc.insertString(doc.getLength(), "[" + message.getUsername() + "]: ", usernameAttr);
-                    doc.insertString(doc.getLength(), message.getMessage() + "\n", messageAttr);
+                    if (username.equals(msg.getTo()) && username.equals(msg.getUsername())) { // Self DM
+                        doc.insertString(doc.getLength(), msg.getTime() + " ", timeAttr);
+                        doc.insertString(doc.getLength(), "[to YOURSELF]: ", dmAttr);
+                        doc.insertString(doc.getLength(), msg.getMessage() + "\n", messageAttr);
+                    } else if (msg.getTo().equals(username)) { // DM to YOU
+                        doc.insertString(doc.getLength(), msg.getTime() + " ", timeAttr);
+                        doc.insertString(doc.getLength(), "[" + msg.getUsername() + " to YOU]: ", dmAttr);
+                        doc.insertString(doc.getLength(), msg.getMessage() + "\n", messageAttr);
+                    } else if (msg.getUsername().equals(username) && msg.isDM()) { // DM from YOU
+                        doc.insertString(doc.getLength(), msg.getTime() + " ", timeAttr);
+                        doc.insertString(doc.getLength(), "[YOU to " + msg.getTo() + "]: ", dmAttr);
+                        doc.insertString(doc.getLength(), msg.getMessage() + "\n", messageAttr);
+                    } else if (msg.getUsername().equals(username)) { // YOU to everyone
+                        doc.insertString(doc.getLength(), msg.getTime() + " ", timeAttr);
+                        doc.insertString(doc.getLength(), "[YOU]: ", dmAttr);
+                        doc.insertString(doc.getLength(), msg.getMessage() + "\n", messageAttr);
+                    } else { //anyone to everyone
+                        doc.insertString(doc.getLength(), msg.getTime() + " ", timeAttr);
+                        doc.insertString(doc.getLength(), "[" + msg.getUsername() + "]: ", usernameAttr);
+                        doc.insertString(doc.getLength(), msg.getMessage() + "\n", messageAttr);
+                    }
                 } catch (BadLocationException | ConcurrentModificationException ignored) {
                 }
             }
