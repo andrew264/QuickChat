@@ -13,6 +13,7 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ConcurrentModificationException;
 import java.util.LinkedList;
 import java.util.Scanner;
 
@@ -133,6 +134,22 @@ public class Client extends JFrame implements ActionListener {
         }
     }
 
+    public static void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
+        try {
+            if (bufferedReader != null) {
+                bufferedReader.close();
+            }
+            if (bufferedWriter != null) {
+                bufferedWriter.close();
+            }
+            if (socket != null) {
+                socket.close();
+            }
+        } catch (IOException e) {
+            System.out.println("Client exception: " + e.getMessage());
+        }
+    }
+
     public void sendMessage() {
         try {
             bufferedWriter.write(username);
@@ -205,22 +222,6 @@ public class Client extends JFrame implements ActionListener {
         }).start();
     }
 
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
-        try {
-            if (bufferedReader != null) {
-                bufferedReader.close();
-            }
-            if (bufferedWriter != null) {
-                bufferedWriter.close();
-            }
-            if (socket != null) {
-                socket.close();
-            }
-        } catch (IOException e) {
-            System.out.println("Client exception: " + e.getMessage());
-        }
-    }
-
     @Override
     public void actionPerformed(ActionEvent e) {
         try {
@@ -273,7 +274,7 @@ public class Client extends JFrame implements ActionListener {
                     doc.insertString(doc.getLength(), message.getTime() + " ", timeAttr);
                     doc.insertString(doc.getLength(), "[" + message.getUsername() + "]: ", usernameAttr);
                     doc.insertString(doc.getLength(), message.getMessage() + "\n", messageAttr);
-                } catch (BadLocationException ignored) {
+                } catch (BadLocationException | ConcurrentModificationException ignored) {
                 }
             }
         }

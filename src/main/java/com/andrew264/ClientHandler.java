@@ -4,12 +4,13 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class ClientHandler implements Runnable {
 
-    public final static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
-    public final static ArrayList<String> usernames = new ArrayList<>();
+    public final static LinkedList<ClientHandler> clientHandlers = new LinkedList<>();
+    public final static LinkedList<String> usernames = new LinkedList<>();
+    private final static LinkedList<Message> messages = new LinkedList<>();
     private final Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
@@ -21,6 +22,7 @@ public class ClientHandler implements Runnable {
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.clientUsername = bufferedReader.readLine();
+            syncMessagesWithClient();
         } catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
@@ -41,8 +43,6 @@ public class ClientHandler implements Runnable {
         }
         clientHandlers.add(this);
         usernames.add(this.clientUsername);
-        System.out.println("[" + clientUsername + "]: connected from " +
-                socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ".");
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("username", "SERVER");
         jsonObject.put("message", clientUsername + " has joined the chat.");
@@ -71,7 +71,22 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    public void syncMessagesWithClient() {
+        for (Message msg : messages) {
+            if (msg.isDM() && !msg.getTo().equals(clientUsername)) continue;
+            try {
+                bufferedWriter.write(msg.getJSONString());
+                bufferedWriter.newLine();
+                bufferedWriter.flush();
+            } catch (IOException e) {
+                closeEverything(socket, bufferedReader, bufferedWriter);
+                break;
+            }
+        }
+    }
+
     public void broadcastMessage(Message message) {
+        messages.add(message);
         if (message.isDM()) {
             if (usernames.contains(message.getTo())) {
                 for (ClientHandler client : clientHandlers) {
@@ -82,20 +97,17 @@ public class ClientHandler implements Runnable {
                             client.bufferedWriter.flush();
                         } catch (IOException e) {
                             closeEverything(socket, bufferedReader, bufferedWriter);
-                        } finally {
-                            System.out.println(message);
                         }
                         break;
                     }
                 }
             } else {
-                System.out.println("User [" + message.getTo() + "] Not Found");
                 try {
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("username", "SERVER");
                     jsonObject.put("message", "User [" + message.getTo() + "] not found");
                     jsonObject.put("to", message.getUsername());
-                    bufferedWriter.write(jsonObject.toString());
+                    bufferedWriter.write(new Message(jsonObject).getJSONString());
                     bufferedWriter.newLine();
                     bufferedWriter.flush();
                 } catch (Exception e) {
@@ -114,7 +126,6 @@ public class ClientHandler implements Runnable {
                     }
                 }
             }
-            System.out.println(message);
         }
     }
 
@@ -126,24 +137,10 @@ public class ClientHandler implements Runnable {
         jsonObject.put("message", clientUsername + " has left the chat.");
         jsonObject.put("to", "everyone");
         broadcastMessage(new Message(jsonObject));
-        System.out.println("[" + clientUsername + "]: disconnected from " +
-                socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + ".");
     }
 
     public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
         removeClientHandler();
-        try {
-            if (socket != null) {
-                socket.close();
-            }
-            if (bufferedReader != null) {
-                bufferedReader.close();
-            }
-            if (bufferedWriter != null) {
-                bufferedWriter.close();
-            }
-        } catch (IOException e) {
-            System.out.println("Client exception: " + e.getMessage());
-        }
+        Client.closeEverything(socket, bufferedReader, bufferedWriter);
     }
 }
