@@ -1,5 +1,7 @@
 package com.andrew264;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.net.*;
 import java.util.Enumeration;
@@ -7,14 +9,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class FindServer {
-    public static InetAddress getIP() {
+
+    public static @Nullable InetAddress getIP() {
         InetAddress ip = null;
         // Find the server using UDP broadcast
         try {
             //Open a random port to send the package
             DatagramSocket c = new DatagramSocket();
             c.setBroadcast(true);
-            c.setSoTimeout(15*1000);
+            c.setSoTimeout(10 * 1000);
 
             byte[] sendData = "DISCOVER_CHAT_SERVER_REQUEST".getBytes();
 
@@ -57,8 +60,9 @@ public class FindServer {
             try {
                 c.receive(receivePacket);
             } catch (SocketTimeoutException e) {
-                System.out.println("No response from Server!");
-                System.exit(0);
+                System.out.println("Timeout: No response from Server!");
+                c.close();
+                return null;
             }
 
             //We have a response

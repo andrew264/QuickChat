@@ -95,8 +95,14 @@ public class Client extends JFrame implements ActionListener {
         setVisible(true);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         InetAddress serverIP = FindServer.getIP();
+        if (serverIP == null) {
+            Thread server = new Thread(new Server());
+            server.start();
+            serverIP = FindServer.getIP();
+            if (serverIP == null) System.exit(0);
+        }
         String username = (String) JOptionPane.showInputDialog(null, "Enter your username:",
                 "Username", JOptionPane.QUESTION_MESSAGE, null, null, "");
         if (username == null || username.isEmpty()) {

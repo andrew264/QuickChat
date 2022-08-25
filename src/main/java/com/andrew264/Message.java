@@ -2,13 +2,14 @@ package com.andrew264;
 
 import org.json.JSONObject;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatterBuilder;
 
 public class Message {
     private final String message;
     private final JSONObject jsonObject;
-    private final LocalDateTime time = LocalDateTime.now();
+    private final long timestamp;
     private String username;
     private String to;
 
@@ -17,6 +18,8 @@ public class Message {
         this.username = (String) jsonObject.get("username");
         this.message = (String) jsonObject.get("message");
         this.to = (String) jsonObject.get("to");
+        this.timestamp = Instant.now().getEpochSecond();
+        jsonObject.put("timestamp", String.valueOf(this.timestamp));
     }
 
     public Message(String jsonString) {
@@ -24,6 +27,7 @@ public class Message {
         this.username = (String) jsonObject.get("username");
         this.message = (String) jsonObject.get("message");
         this.to = (String) jsonObject.get("to");
+        this.timestamp = Long.parseLong((String) jsonObject.get("timestamp"));
     }
 
     public String getUsername() {
@@ -39,7 +43,9 @@ public class Message {
     }
 
     public String getTime() {
-        return time.format(new DateTimeFormatterBuilder().appendPattern("h:mm a").toFormatter());
+        Instant instant = Instant.ofEpochSecond(timestamp);
+        LocalDateTime dateTime = LocalDateTime.ofInstant(instant, java.time.ZoneId.systemDefault());
+        return dateTime.format(new DateTimeFormatterBuilder().appendPattern("h:mm a").toFormatter());
     }
 
     public String getTo() {
