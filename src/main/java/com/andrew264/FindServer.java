@@ -14,6 +14,7 @@ public class FindServer {
             //Open a random port to send the package
             DatagramSocket c = new DatagramSocket();
             c.setBroadcast(true);
+            c.setSoTimeout(15*1000);
 
             byte[] sendData = "DISCOVER_CHAT_SERVER_REQUEST".getBytes();
 
@@ -53,7 +54,12 @@ public class FindServer {
             //Wait for a response
             byte[] receiveBuf = new byte[15000];
             DatagramPacket receivePacket = new DatagramPacket(receiveBuf, receiveBuf.length);
-            c.receive(receivePacket);
+            try {
+                c.receive(receivePacket);
+            } catch (SocketTimeoutException e) {
+                System.out.println("No response from Server!");
+                System.exit(0);
+            }
 
             //We have a response
             System.out.println("Broadcast response from server: " + receivePacket.getAddress().getHostAddress());
