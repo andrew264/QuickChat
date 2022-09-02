@@ -15,7 +15,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ConcurrentModificationException;
 import java.util.LinkedList;
-import java.util.Scanner;
 
 public class Client extends JFrame implements ActionListener {
     private static final int serverPort = 42069;
@@ -35,6 +34,9 @@ public class Client extends JFrame implements ActionListener {
         try {
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            this.bufferedWriter.write(username);
+            this.bufferedWriter.newLine();
+            this.bufferedWriter.flush();
         } catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
@@ -133,7 +135,6 @@ public class Client extends JFrame implements ActionListener {
             Socket socket = new Socket(serverIP, serverPort);
             Client client = new Client(socket, username);
             client.listenForMessages();
-            client.sendMessage();
         } catch (IOException e) {
             System.out.println("Client exception: " + e.getMessage());
         }
@@ -155,52 +156,9 @@ public class Client extends JFrame implements ActionListener {
         }
     }
 
-    public void sendMessage() {
-        try {
-            bufferedWriter.write(username);
-            bufferedWriter.newLine();
-            bufferedWriter.flush();
-
-            Scanner scanner = new Scanner(System.in);
-            String message;
-            while (socket.isConnected()) {
-                message = scanner.nextLine();
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put("username", username);
-                if (message.startsWith("/dm") || message.startsWith("/say") || message.startsWith("/whisper")) {
-                    String[] split = message.split(" ", 3);
-                    if (split.length != 3) {
-                        System.out.println("Invalid command. Usage: /dm <username> <message>");
-                        continue;
-                    }
-                    jsonObject.put("to", split[1]);
-                    jsonObject.put("message", split[2]);
-                } else {
-                    jsonObject.put("message", message);
-                    jsonObject.put("to", "everyone");
-                }
-                Message msgToSend = new Message(jsonObject);
-                bufferedWriter.write(msgToSend.getJSONString());
-                bufferedWriter.newLine();
-                bufferedWriter.flush();
-                messages.add(msgToSend);
-                repaint();
-
-                if (msgToSend.getMessage().equalsIgnoreCase("exit")) {
-                    closeEverything(socket, bufferedReader, bufferedWriter);
-                    break;
-                }
-            }
-
-        } catch (IOException e) {
-            closeEverything(socket, bufferedReader, bufferedWriter);
-        }
-    }
-
     public void listenForMessages() {
         new Thread(() -> {
             String receivedJSONString;
-            Message msgReceived;
 
             while (socket.isConnected()) {
                 try {
@@ -209,14 +167,7 @@ public class Client extends JFrame implements ActionListener {
                         closeEverything(socket, bufferedReader, bufferedWriter);
                         break;
                     }
-                    msgReceived = new Message(receivedJSONString);
-                    if (msgReceived.isDM()) {
-                        System.out.println("[" + msgReceived.getUsername() + " To YOU] @" + msgReceived.getTime() +
-                                " : " + msgReceived.getMessage());
-                    } else {
-                        System.out.println(msgReceived);
-                    }
-                    messages.add(msgReceived);
+                    messages.add(new Message(receivedJSONString));
                     repaint();
                 } catch (IOException e) {
                     closeEverything(socket, bufferedReader, bufferedWriter);
@@ -239,7 +190,13 @@ public class Client extends JFrame implements ActionListener {
                 if (message.startsWith("/dm") || message.startsWith("/say") || message.startsWith("/whisper")) {
                     String[] split = message.split(" ", 3);
                     if (split.length != 3) {
-                        System.out.println("Invalid command. Usage: /dm <username> <message>");
+                        JSONObject jsonObject1 = new JSONObject();
+                        jsonObject1.put("username", "SERVER");
+                        jsonObject1.put("message", "Invalid command. Usage: /dm <username> <message>");
+                        jsonObject1.put("to", username);
+                        messages.add(new Message(jsonObject1));
+                        repaint();
+                        return;
                     }
                     jsonObject.put("to", split[1]);
                     jsonObject.put("message", split[2]);
@@ -254,7 +211,10 @@ public class Client extends JFrame implements ActionListener {
                     bufferedWriter.newLine();
                     bufferedWriter.flush();
                 }
-                messages.add(msgToSend);
+                synchronized (messages) {
+                    messages.add(msgToSend);
+                }
+
                 repaint();
 
                 if (msgToSend.getMessage().equalsIgnoreCase("exit")) {

@@ -10,8 +10,8 @@ public class Message {
     private final String message;
     private final JSONObject jsonObject;
     private final long timestamp;
-    private String username;
-    private String to;
+    private final String username;
+    private final String to;
 
     public Message(JSONObject jsonObject) {
         this.jsonObject = jsonObject;
@@ -61,15 +61,6 @@ public class Message {
             return "[" + username + " To " + to + "]: @" + getTime() + " : " + message;
         } else {
             return "[" + username + "] @ " + getTime() + " : " + message;
-        }
-    }
-
-    public void asFPP(String username) {
-        if (username.equals(this.username)) {
-            this.username = "YOU";
-        }
-        if (username.equals(this.to)) {
-            this.to = "YOU";
         }
     }
 
