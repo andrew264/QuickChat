@@ -258,6 +258,7 @@ public class Client extends JFrame implements ActionListener {
                 }
             }
         }
+        readField.setCaretPosition(doc.getLength());
         super.repaint();
     }
 

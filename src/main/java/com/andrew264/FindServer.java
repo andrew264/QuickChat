@@ -17,7 +17,7 @@ public class FindServer {
             //Open a random port to send the package
             DatagramSocket c = new DatagramSocket();
             c.setBroadcast(true);
-            c.setSoTimeout(10 * 1000);
+            c.setSoTimeout(5 * 1000);
 
             byte[] sendData = "DISCOVER_CHAT_SERVER_REQUEST".getBytes();
 
